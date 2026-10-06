@@ -1,0 +1,35 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+.shelf/
+workspace.xml
+httpRequests/
+queries/
+dataSources/
+dataSources.local.xml
+
+# Java / Maven
+**/target/
+**/*.class
+
+# React / Node
+**/node_modules/
+**/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Spring Boot local configuration
+**/src/main/resources/application.properties
+
+# Logs
+**/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup ZIP
+job-recommendation.zip
