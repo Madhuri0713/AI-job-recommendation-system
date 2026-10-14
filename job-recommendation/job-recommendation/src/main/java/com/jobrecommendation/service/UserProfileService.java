@@ -5,6 +5,7 @@ import com.jobrecommendation.repository.UserProfileRepository;
 import org.springframework.stereotype.Service;
 import com.jobrecommendation.entity.User;
 import com.jobrecommendation.repository.UserRepository;
+import com.jobrecommendation.exception.ResourceNotFoundException;
 
 @Service
 
@@ -23,7 +24,8 @@ public class UserProfileService {
     public UserProfile createProfile(Long userId, UserProfile userProfile) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         userProfile.setUser(user);
 
@@ -32,12 +34,14 @@ public class UserProfileService {
     public UserProfile getProfile(Long userId) {
 
         return userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Profile not found"));
     }
     public UserProfile updateProfile(Long userId, UserProfile updatedProfile) {
 
         UserProfile existingProfile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Profile not found"));
 
         existingProfile.setPhone(updatedProfile.getPhone());
         existingProfile.setLocation(updatedProfile.getLocation());
@@ -50,7 +54,8 @@ public class UserProfileService {
     public void deleteProfile(Long userId) {
 
         UserProfile profile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Profile not found"));
 
         userProfileRepository.delete(profile);
     }

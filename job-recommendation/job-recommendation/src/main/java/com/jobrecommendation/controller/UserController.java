@@ -1,25 +1,22 @@
 package com.jobrecommendation.controller;
-import com.jobrecommendation.entity.User;
-import com.jobrecommendation.service.UserService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
+
+import com.jobrecommendation.dto.LoginRequestDTO;
 import com.jobrecommendation.dto.UserResponseDTO;
+import com.jobrecommendation.entity.User;
+import com.jobrecommendation.service.JwtService;
+import com.jobrecommendation.service.UserService;
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
-import com.jobrecommendation.dto.LoginRequestDTO;
-import org.springframework.http.HttpStatus;
-import com.jobrecommendation.service.JwtService;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+
     private final UserService userService;
     private final JwtService jwtService;
 
@@ -31,25 +28,33 @@ public class UserController {
         this.jwtService = jwtService;
     }
 
+    // Register a new user
     @PostMapping
-    public ResponseEntity<?> createUser(@RequestBody User user) {
+    public ResponseEntity<UserResponseDTO> createUser(
+            @Valid @RequestBody User user) {
 
-        try {
-            User savedUser = userService.createUser(user);
-            return ResponseEntity.ok(savedUser);
+        User savedUser = userService.createUser(user);
 
-        } catch (RuntimeException e) {
-            return ResponseEntity
-                    .status(HttpStatus.CONFLICT)
-                    .body(Map.of("message", e.getMessage()));
-        }
+        UserResponseDTO response = new UserResponseDTO(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
+
+        return ResponseEntity.ok(response);
     }
+
+    // Get all users
     @GetMapping
     public List<UserResponseDTO> getAllUsers() {
         return userService.getAllUsers();
     }
+
+    // Get user by ID
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponseDTO> getUserById(
+            @PathVariable Long id) {
 
         return userService.getUserById(id)
                 .map(user -> new UserResponseDTO(
@@ -61,6 +66,8 @@ public class UserController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    // Update user
     @PutMapping("/{id}")
     public UserResponseDTO updateUser(
             @PathVariable Long id,
@@ -75,6 +82,8 @@ public class UserController {
                 updatedUser.getRole()
         );
     }
+
+    // Delete user
     @DeleteMapping("/{id}")
     public String deleteUser(@PathVariable Long id) {
 
@@ -82,41 +91,32 @@ public class UserController {
 
         return "User deleted successfully";
     }
+
+    // Login user
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDTO loginRequest) {
+    public ResponseEntity<?> login(
+           @Valid @RequestBody LoginRequestDTO loginRequest) {
 
-        try {
+        User user = userService.loginUser(
+                loginRequest.getEmail(),
+                loginRequest.getPassword()
+        );
 
-            User user = userService.loginUser(
-                    loginRequest.getEmail(),
-                    loginRequest.getPassword()
-            );
+        String token = jwtService.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRole()
+        );
 
-            String token = jwtService.generateToken(
-                    user.getId(),
-                    user.getEmail(),
-                    user.getRole()
-            );
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "message", "Login successful",
-                            "token", token,
-                            "userId", user.getId(),
-                            "name", user.getName(),
-                            "email", user.getEmail(),
-                            "role", user.getRole()
-                    )
-            );
-
-        } catch (RuntimeException e) {
-
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "message",
-                            "Invalid email or password"
-                    ));
-        }
+        return ResponseEntity.ok(
+                Map.of(
+                        "message", "Login successful",
+                        "token", token,
+                        "userId", user.getId(),
+                        "name", user.getName(),
+                        "email", user.getEmail(),
+                        "role", user.getRole()
+                )
+        );
     }
 }

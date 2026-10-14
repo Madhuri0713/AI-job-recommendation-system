@@ -9,6 +9,7 @@ import com.jobrecommendation.repository.SkillRepository;
 import com.jobrecommendation.repository.UserSkillRepository;
 import org.springframework.stereotype.Service;
 import com.jobrecommendation.exception.DuplicateResourceException;
+import com.jobrecommendation.exception.ResourceNotFoundException;
 
 import java.util.List;
 
@@ -32,12 +33,19 @@ public class UserSkillService {
     public UserSkillResponseDTO addSkillToUser(Long userId, Long skillId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         Skill skill = skillRepository.findById(skillId)
-                .orElseThrow(() -> new RuntimeException("Skill not found"));
-        if (userSkillRepository.findByUserIdAndSkillId(userId, skillId).isPresent()) {
-            throw new DuplicateResourceException("User already has this skill");
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Skill not found"));
+
+        if (userSkillRepository
+                .findByUserIdAndSkillId(userId, skillId)
+                .isPresent()) {
+
+            throw new DuplicateResourceException(
+                    "User already has this skill");
         }
 
         UserSkill userSkill = new UserSkill();
@@ -45,7 +53,8 @@ public class UserSkillService {
         userSkill.setUser(user);
         userSkill.setSkill(skill);
 
-        UserSkill savedUserSkill = userSkillRepository.save(userSkill);
+        UserSkill savedUserSkill =
+                userSkillRepository.save(userSkill);
 
         return new UserSkillResponseDTO(
                 savedUserSkill.getId(),
@@ -69,4 +78,27 @@ public class UserSkillService {
                 ))
                 .toList();
     }
+    public List<UserSkillResponseDTO> getUserSkills(Long userId) {
+
+        return userSkillRepository.findByUserId(userId)
+                .stream()
+                .map(userSkill -> new UserSkillResponseDTO(
+                        userSkill.getId(),
+                        userSkill.getUser().getId(),
+                        userSkill.getUser().getName(),
+                        userSkill.getSkill().getId(),
+                        userSkill.getSkill().getName()
+                ))
+                .toList();
+    }
+    public void deleteUserSkill(Long userId, Long skillId) {
+
+        UserSkill userSkill = userSkillRepository
+                .findByUserIdAndSkillId(userId, skillId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User skill not found"));
+
+        userSkillRepository.delete(userSkill);
+    }
+
 }

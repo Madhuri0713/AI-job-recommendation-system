@@ -2,12 +2,15 @@ package com.jobrecommendation.controller;
 
 import com.jobrecommendation.entity.Skill;
 import com.jobrecommendation.service.SkillService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 @RestController
 @RequestMapping("/api/skills")
 public class SkillController {
+
     private final SkillService skillService;
 
     public SkillController(SkillService skillService) {
@@ -15,7 +18,7 @@ public class SkillController {
     }
 
     @PostMapping
-    public Skill createSkill(@RequestBody Skill skill) {
+    public Skill createSkill(@Valid @RequestBody Skill skill) {
         return skillService.createSkill(skill);
     }
 
@@ -32,7 +35,7 @@ public class SkillController {
     @PutMapping("/{id}")
     public Skill updateSkill(
             @PathVariable Long id,
-            @RequestBody Skill skill) {
+            @Valid @RequestBody Skill skill) {
 
         return skillService.updateSkill(id, skill);
     }

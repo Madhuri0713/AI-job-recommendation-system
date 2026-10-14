@@ -8,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,32 +37,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authorizationHeader =
                 request.getHeader("Authorization");
 
-        // DEBUG
-        System.out.println(
-                "Request: " +
-                        request.getMethod() +
-                        " " +
-                        request.getRequestURI()
-        );
-
-        System.out.println(
-                "Authorization Header Present: " +
-                        (authorizationHeader != null)
-        );
-
+        // No token: let Spring Security handle protected endpoints.
         if (authorizationHeader == null ||
                 !authorizationHeader.startsWith("Bearer ")) {
-
-            System.out.println(
-                    "No Bearer token found"
-            );
 
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token =
-                authorizationHeader.substring(7);
+        String token = authorizationHeader.substring(7);
 
         try {
 
@@ -72,16 +56,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .getPayload();
 
             String userId = claims.getSubject();
-            String email = claims.get("email", String.class);
             String role = claims.get("role", String.class);
 
-            System.out.println(
-                    "JWT Valid - User ID: " + userId
-            );
-
-            System.out.println(
-                    "JWT Role: " + role
-            );
+            if (userId == null || role == null || role.isBlank()) {
+                sendUnauthorized(response);
+                return;
+            }
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -98,23 +78,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .getContext()
                     .setAuthentication(authentication);
 
-            System.out.println(
-                    "Authentication set successfully"
-            );
+        } catch (Exception exception) {
 
-        } catch (Exception e) {
-
-            System.out.println(
-                    "Invalid JWT token: " +
-                            e.getClass().getSimpleName()
-            );
-
-            System.out.println(
-                    "Reason: " +
-                            e.getMessage()
-            );
+            SecurityContextHolder.clearContext();
+            sendUnauthorized(response);
+            return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void sendUnauthorized(HttpServletResponse response)
+            throws IOException {
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+        response.getWriter().write(
+                "{\"status\":401,\"message\":\"Invalid or expired JWT token\"}"
+        );
     }
 }

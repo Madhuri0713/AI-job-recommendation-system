@@ -2,23 +2,33 @@ package com.jobrecommendation.controller;
 
 import com.jobrecommendation.dto.UserProfileResponseDTO;
 import com.jobrecommendation.entity.UserProfile;
+import com.jobrecommendation.security.UserAuthorizationService;
 import com.jobrecommendation.service.UserProfileService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.PathVariable;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/profiles")
 public class UserProfileController {
-    private final UserProfileService userProfileService;
 
-    public UserProfileController(UserProfileService userProfileService) {
+    private final UserProfileService userProfileService;
+    private final UserAuthorizationService userAuthorizationService;
+
+    public UserProfileController(
+            UserProfileService userProfileService,
+            UserAuthorizationService userAuthorizationService) {
+
         this.userProfileService = userProfileService;
+        this.userAuthorizationService = userAuthorizationService;
     }
 
     @PostMapping("/{userId}")
     public UserProfileResponseDTO createProfile(
             @PathVariable Long userId,
-            @RequestBody UserProfile userProfile) {
+            @Valid @RequestBody UserProfile userProfile) {
+
+        // Check whether logged-in user owns this userId
+        userAuthorizationService.checkUserAccess(userId);
 
         UserProfile savedProfile =
                 userProfileService.createProfile(userId, userProfile);
@@ -33,10 +43,16 @@ public class UserProfileController {
                 savedProfile.getUser().getId()
         );
     }
-    @GetMapping("/{userId}")
-    public UserProfileResponseDTO getProfile(@PathVariable Long userId) {
 
-        UserProfile profile = userProfileService.getProfile(userId);
+    @GetMapping("/{userId}")
+    public UserProfileResponseDTO getProfile(
+            @PathVariable Long userId) {
+
+        // Check whether logged-in user owns this userId
+        userAuthorizationService.checkUserAccess(userId);
+
+        UserProfile profile =
+                userProfileService.getProfile(userId);
 
         return new UserProfileResponseDTO(
                 profile.getId(),
@@ -48,10 +64,14 @@ public class UserProfileController {
                 profile.getUser().getId()
         );
     }
+
     @PutMapping("/{userId}")
     public UserProfileResponseDTO updateProfile(
             @PathVariable Long userId,
-            @RequestBody UserProfile userProfile) {
+            @Valid @RequestBody UserProfile userProfile) {
+
+        // Check whether logged-in user owns this userId
+        userAuthorizationService.checkUserAccess(userId);
 
         UserProfile updatedProfile =
                 userProfileService.updateProfile(userId, userProfile);
@@ -66,8 +86,13 @@ public class UserProfileController {
                 updatedProfile.getUser().getId()
         );
     }
+
     @DeleteMapping("/{userId}")
-    public String deleteProfile(@PathVariable Long userId) {
+    public String deleteProfile(
+            @PathVariable Long userId) {
+
+        // Check whether logged-in user owns this userId
+        userAuthorizationService.checkUserAccess(userId);
 
         userProfileService.deleteProfile(userId);
 
